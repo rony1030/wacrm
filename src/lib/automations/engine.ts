@@ -423,25 +423,103 @@ async function runStep(step: AutomationStep, args: ExecuteArgs): Promise<string>
     case 'assign_conversation': {
       const cfg = step.step_config as AssignConversationStepConfig
       if (!args.contactId) throw new Error('assign_conversation needs a contact')
-      let agentId = cfg.agent_id
-      if (cfg.mode === 'round_robin') {
-        // Pick any member of the account. The existing implementation
-        // only ever returned the automation's author; preserving that
-        // shape until a real round-robin algorithm replaces it.
-        const { data: profiles } = await db
-          .from('profiles')
-          .select('user_id')
+
+      // 1. Only apply to unassigned contacts if configured
+      if (cfg.only_unassigned) {
+        const { data: convData } = await db
+          .from('conversations')
+          .select('assigned_agent_id')
           .eq('account_id', args.automation.account_id)
-          .limit(1)
-        agentId = profiles?.[0]?.user_id
+          .eq('contact_id', args.contactId)
+          .maybeSingle();
+
+        if (convData?.assigned_agent_id) {
+          return `skipped: conversation already assigned to ${convData.assigned_agent_id}`;
+        }
       }
-      if (!agentId) return 'no agent resolved'
+
+      let agentId = cfg.agent_id;
+      if (cfg.mode === 'round_robin') {
+        const pool = cfg.agents_pool || [];
+        if (pool.length === 0) {
+          // Fallback to all account profiles if pool is empty
+          const { data: profiles } = await db
+            .from('profiles')
+            .select('user_id')
+            .eq('account_id', args.automation.account_id);
+          if (Array.isArray(profiles) && profiles.length > 0) {
+            pool.push(...profiles.map((p: any) => p.user_id));
+          }
+        }
+
+        if (pool.length > 0) {
+          if (cfg.split_type === 'uneven' && cfg.weights) {
+            // Deficit priority score allocation
+            // Count assignments in the last 30 days to avoid full table scans
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+            const { data: assignments } = await db
+              .from('conversations')
+              .select('assigned_agent_id')
+              .eq('account_id', args.automation.account_id)
+              .in('assigned_agent_id', pool)
+              .gte('created_at', thirtyDaysAgo.toISOString());
+
+            const counts: Record<string, number> = {};
+            pool.forEach(id => { counts[id] = 0; });
+            if (Array.isArray(assignments)) {
+              assignments.forEach((a: any) => {
+                if (a.assigned_agent_id) {
+                  counts[a.assigned_agent_id] = (counts[a.assigned_agent_id] || 0) + 1;
+                }
+              });
+            }
+
+            // Pick agent with highest deficit score: weight / (count + 1)
+            let bestAgent = pool[0];
+            let maxScore = -1;
+            pool.forEach(id => {
+              const weight = Number(cfg.weights?.[id] ?? 1);
+              const count = counts[id] || 0;
+              const score = weight / (count + 1);
+              if (score > maxScore) {
+                maxScore = score;
+                bestAgent = id;
+              }
+            });
+            agentId = bestAgent;
+          } else {
+            // Strict sequential round-robin (circular queue based on last assigned conversation)
+            const { data: lastConv } = await db
+              .from('conversations')
+              .select('assigned_agent_id')
+              .eq('account_id', args.automation.account_id)
+              .in('assigned_agent_id', pool)
+              .order('created_at', { ascending: false })
+              .limit(1);
+
+            const lastAgentId = lastConv?.[0]?.assigned_agent_id;
+            if (lastAgentId && pool.includes(lastAgentId)) {
+              const idx = pool.indexOf(lastAgentId);
+              const nextIdx = (idx + 1) % pool.length;
+              agentId = pool[nextIdx];
+            } else {
+              agentId = pool[0];
+            }
+          }
+        }
+      }
+
+      if (!agentId) return 'no agent resolved';
+
       await db
         .from('conversations')
         .update({ assigned_agent_id: agentId })
         .eq('account_id', args.automation.account_id)
-        .eq('contact_id', args.contactId)
-      return `assigned to ${agentId}`
+        .eq('contact_id', args.contactId);
+
+      return `assigned to ${agentId}`;
     }
 
     case 'update_contact_field': {

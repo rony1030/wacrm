@@ -1204,29 +1204,141 @@ function StepEditor({
           />
         </FieldBlock>
       )
-    case "assign_conversation":
+    case "assign_conversation": {
+      const { members } = useResources();
+      const agentsPool = (cfg.agents_pool as string[]) ?? [];
+      const splitType = (cfg.split_type as 'equal' | 'uneven') ?? 'equal';
+      const weights = (cfg.weights as Record<string, number>) ?? {};
+      const onlyUnassigned = !!cfg.only_unassigned;
+
+      const toggleAgentInPool = (agentId: string) => {
+        if (agentsPool.includes(agentId)) {
+          set({ agents_pool: agentsPool.filter(id => id !== agentId) });
+        } else {
+          set({ agents_pool: [...agentsPool, agentId] });
+        }
+      };
+
+      const handleWeightChange = (agentId: string, val: number) => {
+        set({
+          weights: {
+            ...weights,
+            [agentId]: Math.max(1, val)
+          }
+        });
+      };
+
       return (
         <>
           <FieldBlock label="Mode">
             <select
               value={(cfg.mode as string) ?? "round_robin"}
               onChange={(e) => set({ mode: e.target.value })}
-              className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+              className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground animate-fade-in"
             >
-              <option value="round_robin">Round-robin</option>
+              <option value="round_robin">Round-robin (Rueda / Reparto)</option>
               <option value="specific">Specific agent</option>
             </select>
           </FieldBlock>
-          {cfg.mode === "specific" && (
+
+          {cfg.mode === "specific" ? (
             <FieldBlock label="Agent">
               <AgentSelect
                 value={(cfg.agent_id as string) ?? ""}
                 onChange={(v) => set({ agent_id: v })}
               />
             </FieldBlock>
+          ) : (
+            <>
+              {/* Agents pool selection */}
+              <div className="space-y-2 mt-4 pt-4 border-t border-border/40">
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                  Select Agents for Round-Robin Pool
+                </span>
+                {members.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">No agents available.</p>
+                ) : (
+                  <div className="space-y-2 bg-muted/30 p-3 rounded-lg border border-border/50 max-h-48 overflow-y-auto">
+                    {members.map(m => {
+                      const isSelected = agentsPool.includes(m.user_id);
+                      return (
+                        <label key={m.user_id} className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer py-0.5 hover:text-primary transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleAgentInPool(m.user_id)}
+                            className="rounded border-border bg-muted text-primary focus:ring-0 cursor-pointer"
+                          />
+                          <span>{m.full_name || m.email || m.user_id}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Split Type */}
+              <FieldBlock label="Distribution Type">
+                <select
+                  value={splitType}
+                  onChange={(e) => set({ split_type: e.target.value })}
+                  className="w-full rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground"
+                >
+                  <option value="equal">Equally Distributed (Round-robin)</option>
+                  <option value="uneven">Weighted Distribution (Uneven weight ratios)</option>
+                </select>
+              </FieldBlock>
+
+              {/* Weights input for Uneven type */}
+              {splitType === 'uneven' && agentsPool.length > 0 && (
+                <div className="space-y-2 bg-muted/20 p-4 rounded-xl border border-border/50">
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider block">
+                    Set Agent Weights
+                  </span>
+                  <div className="space-y-3">
+                    {agentsPool.map(agentId => {
+                      const agent = members.find(m => m.user_id === agentId);
+                      const weight = weights[agentId] ?? 1;
+                      return (
+                        <div key={agentId} className="flex items-center justify-between gap-4">
+                          <span className="text-xs text-foreground truncate max-w-[200px]">
+                            {agent ? (agent.full_name || agent.email) : agentId}
+                          </span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={weight}
+                            onChange={(e) => handleWeightChange(agentId, parseInt(e.target.value) || 1)}
+                            className="w-16 rounded-md border border-border bg-muted px-2 py-1 text-center text-xs text-white outline-none focus:border-primary/40"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
           )}
+
+          {/* Toggle for Only apply to unassigned contacts */}
+          <div className="flex items-center gap-2.5 mt-4 pt-4 border-t border-border/40">
+            <input
+              type="checkbox"
+              id="only_unassigned"
+              checked={onlyUnassigned}
+              onChange={(e) => set({ only_unassigned: e.target.checked })}
+              className="rounded border-border bg-muted text-primary focus:ring-0 cursor-pointer"
+            />
+            <label htmlFor="only_unassigned" className="text-xs text-foreground font-semibold cursor-pointer select-none">
+              Only Apply to Unassigned Contacts
+            </label>
+          </div>
+          <span className="text-[10px] text-muted-foreground block -mt-1 pl-6">
+            If active, leads that already have an agent assigned will not be rotated/changed.
+          </span>
         </>
-      )
+      );
+    }
     case "update_contact_field":
       return (
         <>

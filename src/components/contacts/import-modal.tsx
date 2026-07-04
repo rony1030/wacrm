@@ -297,6 +297,17 @@ export function ImportModal({
 
             if (!singleErr && singleData) {
               imported++;
+              
+              // Trigger automation for the newly created contact
+              fetch('/api/automations/engine', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  trigger_type: 'new_contact_created',
+                  contact_id: singleData.id
+                })
+              }).catch(err => console.error("Error triggering automation for imported contact:", err));
+
               if (source.tagNames.length > 0) {
                 tagAssignments.push({
                   contactId: singleData.id,
@@ -312,6 +323,19 @@ export function ImportModal({
         } else {
           const inserted = data ?? [];
           imported += inserted.length;
+          
+          // Trigger automation for each inserted contact in this chunk
+          for (const item of inserted) {
+            fetch('/api/automations/engine', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                trigger_type: 'new_contact_created',
+                contact_id: item.id
+              })
+            }).catch(err => console.error("Error triggering automation for imported contact:", err));
+          }
+
           // inserted[j] ↔ chunk[j] only holds because a single INSERT
           // preserves RETURNING order. If this path is ever split into
           // parallel inserts, zip by phone or returned id instead.

@@ -457,6 +457,10 @@ export interface TagStepConfig {
 export interface AssignConversationStepConfig {
   mode: 'specific' | 'round_robin';
   agent_id?: string;
+  agents_pool?: string[];
+  split_type?: 'equal' | 'uneven';
+  weights?: Record<string, number>;
+  only_unassigned?: boolean;
 }
 
 export interface UpdateContactFieldStepConfig {
