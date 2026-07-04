@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import { useUnreadNotifications } from "@/hooks/use-unread-notifications";
 import {
@@ -113,6 +114,7 @@ interface SidebarProps {
 
 export function Sidebar({ open = false, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { t } = useI18n();
   const { profile, profileLoading, account, accountRole, signOut } = useAuth();
   const totalUnread = useTotalUnread();
   const unreadNotifications = useUnreadNotifications();
@@ -186,9 +188,9 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-border/20 px-4">
           <Link href="/dashboard" className="flex items-center gap-2 w-full pr-6">
             <img 
-              src="/logo-rm.png" 
+              src="/logo-rm.svg" 
               alt="R&M Marketing Logo" 
-              className="h-10 w-auto object-contain max-w-full"
+              className="h-11 w-auto object-contain max-w-full"
             />
           </Link>
           <button
@@ -219,6 +221,19 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               const showNotificationBadge =
                 item.href === "/notifications" && unreadNotifications > 0;
 
+              const keyMap: Record<string, string> = {
+                "Dashboard": "dashboard",
+                "Inbox": "inbox",
+                "Notifications": "notifications",
+                "Contacts": "contacts",
+                "Pipelines": "pipelines",
+                "Broadcasts": "broadcasts",
+                "Automations": "automations",
+                "Flows": "flows",
+                "AI Agents": "aiAgents",
+              };
+              const translatedLabel = t(keyMap[item.label] || item.label.toLowerCase());
+
               return (
                 <li key={item.href}>
                   <Link
@@ -227,12 +242,12 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                       // Taller on mobile so fingers can hit the row reliably (≥44px).
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all lg:py-2",
                       isActive
-                        ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_4px_12px_rgba(0,188,212,0.25)] font-semibold"
+                        ? "active-glass-item"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <item.icon className="h-4 w-4" />
-                    <span className="flex-1">{item.label}</span>
+                    <span className="flex-1">{translatedLabel}</span>
                     {item.beta && (
                       <span
                         aria-label="Beta feature"
@@ -269,19 +284,20 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
           <ul className="flex flex-col gap-1">
             {bottomNavItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
+              const translatedLabel = t("settings");
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all lg:py-2",
                       isActive
-                        ? "bg-primary/10 text-primary"
+                        ? "active-glass-item"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <item.icon className="h-4 w-4" />
-                    {item.label}
+                    {translatedLabel}
                   </Link>
                 </li>
               );
@@ -366,7 +382,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 }
               >
                 <User className="size-4" />
-                Profile
+                {t("profile") || "Mi Perfil"}
               </DropdownMenuItem>
               <DropdownMenuItem
                 render={
@@ -378,7 +394,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 }
               >
                 <Settings className="size-4" />
-                Settings
+                {t("settings")}
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem
@@ -386,7 +402,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
               >
                 <LogOut className="size-4" />
-                Sign out
+                {t("logout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
