@@ -183,14 +183,13 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       >
         {/* Logo row. On mobile we put a close button here; on desktop the
             close button is hidden since the sidebar is always-visible. */}
-        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border/20 px-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <MessageSquare className="h-4 w-4" />
-            </div>
-            <span className="text-sm font-semibold text-foreground">
-              CRM Template for WhatsApp
-            </span>
+        <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-border/20 px-4">
+          <Link href="/dashboard" className="flex items-center gap-2 w-full pr-6">
+            <img 
+              src="/logo-rm.png" 
+              alt="R&M Marketing Logo" 
+              className="h-10 w-auto object-contain max-w-full"
+            />
           </Link>
           <button
             type="button"
@@ -226,9 +225,9 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                     href={item.href}
                     className={cn(
                       // Taller on mobile so fingers can hit the row reliably (≥44px).
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all lg:py-2",
                       isActive
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_4px_12px_rgba(0,188,212,0.25)] font-semibold"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
