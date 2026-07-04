@@ -20,16 +20,16 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "wacrm",
-    template: "%s — wacrm",
+    default: "R&M Marketing CRM",
+    template: "%s — R&M CRM",
   },
-  description: "Self-hostable CRM template for WhatsApp.",
+  description: "Plataforma de CRM para R&M Marketing.",
   robots: {
     index: false,
     follow: false,
   },
   icons: {
-    icon: [{ url: "/icon" }],
+    icon: [{ url: "/isotipo-rm.svg" }],
   },
   formatDetection: {
     email: false,
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "WACRM",
+    title: "R&M CRM",
   },
 };
 
