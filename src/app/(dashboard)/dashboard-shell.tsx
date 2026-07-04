@@ -40,13 +40,7 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-background">
-      {/* Background gradients for Glassmorphism */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden opacity-30 dark:opacity-10">
-        <div className="absolute -top-[40%] -left-[20%] h-[80%] w-[60%] rounded-full bg-gradient-to-br from-indigo-300 to-purple-400 blur-[130px]" />
-        <div className="absolute top-[30%] -right-[10%] h-[70%] w-[50%] rounded-full bg-gradient-to-br from-pink-300 to-rose-300 blur-[130px]" />
-        <div className="absolute -bottom-[20%] left-[30%] h-[60%] w-[50%] rounded-full bg-gradient-to-br from-blue-300 to-teal-300 blur-[130px]" />
-      </div>
+    <div className="relative flex h-screen overflow-hidden bg-background/20 animated-mesh-bg">
       {/* Reports this tab's online/away presence once we know a user is
           signed in. Headless — renders nothing. */}
       <PresenceHeartbeat />
