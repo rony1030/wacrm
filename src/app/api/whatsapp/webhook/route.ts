@@ -101,7 +101,16 @@ export async function GET(request: Request) {
       )
     }
 
-    // Fetch all whatsapp configs to check verify tokens
+    // 1. Fallback verification check (for initial developer setup / custom environments)
+    const fallbackToken = process.env.META_VERIFY_TOKEN || process.env.NEXT_PUBLIC_META_VERIFY_TOKEN
+    if (fallbackToken && verifyToken === fallbackToken) {
+      return new Response(challenge, {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      })
+    }
+
+    // 2. Fetch all whatsapp configs to check verify tokens in DB
     const { data: configs, error: configError } = await supabaseAdmin()
       .from('whatsapp_config')
       .select('id, verify_token')
