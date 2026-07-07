@@ -302,6 +302,36 @@ export async function sendMessageToConversation(
   }
 
   const attempt = async (phone: string): Promise<string> => {
+    const renderGatewayUrl = process.env.RENDER_GATEWAY_URL;
+    const apiSecretToken = process.env.API_SECRET_TOKEN;
+
+    if (renderGatewayUrl && apiSecretToken) {
+      try {
+        const response = await fetch(`${renderGatewayUrl}/api/send`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiSecretToken}`
+          },
+          body: JSON.stringify({
+            to: phone,
+            text: contentText || `[${messageType}]`
+          })
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`Render Gateway responded with status ${response.status}: ${errText}`);
+        }
+
+        const data = await response.json() as { success: boolean; messageId: string };
+        return data.messageId || `render_${Date.now()}`;
+      } catch (err) {
+        console.error('[send-message] Error sending via Render Gateway:', err);
+        throw err;
+      }
+    }
+
     if (messageType === 'template') {
       const result = await sendTemplateMessage({
         phoneNumberId: config.phone_number_id,

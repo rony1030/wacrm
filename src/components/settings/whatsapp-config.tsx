@@ -394,6 +394,62 @@ export function WhatsAppConfig() {
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
       {/* Main config form */}
       <div className="space-y-6">
+        {/* Render Gateway Integration QR & Restart */}
+        {process.env.NEXT_PUBLIC_RENDER_GATEWAY_URL && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <Zap className="size-5 text-primary fill-primary/10" />
+                Render WhatsApp Gateway
+              </CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Escanea el código QR a continuación para vincular tu WhatsApp mediante el Gateway de Render.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg border border-border min-h-[300px]">
+                <iframe
+                  src={`${process.env.NEXT_PUBLIC_RENDER_GATEWAY_URL}/api/qr`}
+                  className="w-full h-[320px] border-0 rounded"
+                  title="WhatsApp QR Code Gateway"
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4 p-3 bg-muted rounded-lg border border-border flex-wrap md:flex-nowrap">
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">¿Gateway desconectado o con errores?</h4>
+                  <p className="text-xs text-muted-foreground">Reinicia el microservicio en Render para forzar una nueva conexión limpia.</p>
+                </div>
+                <Button
+                  onClick={async () => {
+                    const confirmRestart = confirm('¿Estás seguro de que deseas reiniciar el Gateway de Render? Esto tomará aproximadamente un minuto.');
+                    if (!confirmRestart) return;
+
+                    const toastId = toast.loading('Reiniciando Gateway en Render...');
+                    try {
+                      const res = await fetch('/api/whatsapp/gateway-restart', { method: 'POST' });
+                      const data = await res.json();
+                      if (res.ok) {
+                        toast.success('Reinicio solicitado con éxito.', { id: toastId });
+                      } else {
+                        toast.error(data.error || 'Error al reiniciar el Gateway.', { id: toastId });
+                      }
+                    } catch (err) {
+                      toast.error('Error de red al intentar reiniciar el Gateway.', { id: toastId });
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="border-red-900/40 text-red-400 hover:text-red-300 hover:bg-red-950/20 shrink-0"
+                >
+                  <RotateCcw className="size-4 mr-2 animate-pulse" />
+                  Reiniciar Gateway
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Corrupted-token reset banner */}
         {showResetBanner && (
           <Alert className="bg-amber-950/40 border-amber-600/40">
