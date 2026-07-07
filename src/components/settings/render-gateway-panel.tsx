@@ -40,6 +40,7 @@ export function RenderGatewayPanel() {
       />
 
       <div className="grid gap-6">
+        {/* Card 1: QR Code Connection */}
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
             <CardTitle className="text-foreground flex items-center gap-2">
@@ -50,15 +51,22 @@ export function RenderGatewayPanel() {
               Escanea el código QR a continuación desde la aplicación de WhatsApp de tu celular (Dispositivos Vinculados).
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg border border-border min-h-[350px]">
+          <CardContent>
+            <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg border border-border min-h-[480px]">
               <iframe
                 src={`${gatewayUrl}/api/qr`}
-                className="w-full h-[340px] border-0 rounded bg-white dark:bg-zinc-950"
+                className="w-full h-[460px] border-0 rounded bg-white dark:bg-zinc-950 overflow-hidden"
+                style={{ overflow: 'hidden' }}
+                scrolling="no"
                 title="WhatsApp QR Code Gateway"
               />
             </div>
+          </CardContent>
+        </Card>
 
+        {/* Card 2: Troubleshooting and Restart */}
+        <Card className="border-border bg-card">
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between gap-4 p-4 bg-muted rounded-lg border border-border flex-wrap md:flex-nowrap">
               <div>
                 <h4 className="text-sm font-semibold text-foreground">¿El Gateway está desconectado o muestra errores?</h4>
