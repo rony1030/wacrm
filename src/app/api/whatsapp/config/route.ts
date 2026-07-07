@@ -213,6 +213,60 @@ export async function POST(request: Request) {
       }
     }
 
+    if (process.env.RENDER_GATEWAY_URL) {
+      let encryptedAccessToken: string
+      let encryptedVerifyToken: string | null
+      try {
+        encryptedAccessToken = encrypt(access_token)
+        encryptedVerifyToken = verify_token ? encrypt(verify_token) : null
+      } catch (err) {
+        return NextResponse.json({ error: 'Failed to encrypt token.' }, { status: 500 })
+      }
+
+      const baseRow = {
+        phone_number_id,
+        waba_id: waba_id || null,
+        access_token: encryptedAccessToken,
+        verify_token: encryptedVerifyToken,
+        status: 'connected',
+        connected_at: new Date().toISOString(),
+        registered_at: new Date().toISOString(),
+        subscribed_apps_at: new Date().toISOString(),
+        last_registration_error: null,
+        updated_at: new Date().toISOString(),
+      }
+
+      const { data: existing } = await supabase
+        .from('whatsapp_config')
+        .select('id')
+        .eq('account_id', accountId)
+        .maybeSingle()
+
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from('whatsapp_config')
+          .update(baseRow)
+          .eq('account_id', accountId)
+        if (updateError) return NextResponse.json({ error: 'Failed to update config' }, { status: 500 })
+      } else {
+        const { error: insertError } = await supabase
+          .from('whatsapp_config')
+          .insert({
+            account_id: accountId,
+            user_id: user.id,
+            ...baseRow,
+          })
+        if (insertError) return NextResponse.json({ error: 'Failed to insert config' }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        saved: true,
+        registered: true,
+        phone_info: { verified_name: "Render WhatsApp Gateway" }
+      })
+    }
+
     // Reject if another account has already claimed this phone_number_id.
     // wacrm is single-tenant-per-WhatsApp-number — letting two accounts
     // bind the same number causes the webhook's `.single()` lookup to
