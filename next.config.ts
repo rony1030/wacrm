@@ -36,6 +36,8 @@ const SECURITY_HEADERS = [
     key: "Content-Security-Policy-Report-Only",
     value: [
       "default-src 'self'",
+      // Allow framing the Render Gateway QR code page
+      "frame-src 'self' https://*.onrender.com",
       // Next.js needs 'unsafe-inline' for its inline hydration script
       // and 'unsafe-eval' in dev + some production optimisations.
       // Nonce-based CSP is a later project.
