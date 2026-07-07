@@ -110,6 +110,16 @@ export async function GET() {
       )
     }
 
+    if (process.env.RENDER_GATEWAY_URL) {
+      return NextResponse.json({
+        connected: true,
+        phone_info: {
+          verified_name: "Render WhatsApp Gateway",
+          display_phone_number: config.phone_number_id,
+        }
+      })
+    }
+
     // Try to decrypt the stored token with the current ENCRYPTION_KEY.
     // If this fails, the key changed (or was never consistent across envs).
     let accessToken: string

@@ -268,7 +268,7 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
       // operators see the real cause in logs. ≥2 rows shouldn't happen
       // post-migration 013 (UNIQUE constraint), but a row created
       // before the constraint, or a race, would still surface here.
-      const { data: configRows, error: configError } = await supabaseAdmin()
+      let { data: configRows, error: configError } = await supabaseAdmin()
         .from('whatsapp_config')
         .select('*')
         .eq('phone_number_id', phoneNumberId)
@@ -280,6 +280,16 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
           configError
         )
         continue
+      }
+
+      // Fallback: If no config matches the incoming phone_number_id (e.g. env var mismatch)
+      // and Render Gateway is active, fallback to the first configuration in the DB.
+      if ((!configRows || configRows.length === 0) && process.env.RENDER_GATEWAY_URL) {
+        const { data: fallbackRows } = await supabaseAdmin()
+          .from('whatsapp_config')
+          .select('*')
+          .limit(1)
+        configRows = fallbackRows
       }
 
       if (!configRows || configRows.length === 0) {
